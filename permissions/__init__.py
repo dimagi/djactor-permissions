@@ -35,7 +35,7 @@ class PermissionBase(object):
         """
         return permissions.utils.remove_permission(self, role, permission)
 
-    def has_permission(self, user, permission, roles=[]):
+    def has_permission(self, user, permission, roles=None):
         """Returns True if the passed user has passed permission for this
         instance. Otherwise False.
 
@@ -52,9 +52,11 @@ class PermissionBase(object):
             If passed, these roles will be assigned to the user temporarily
             before the permissions are checked.
         """
+        if roles is None:
+            roles = []
         return permissions.utils.has_permission(self, user, permission, roles)
 
-    def check_permission(self, user, permission, roles=[]):
+    def check_permission(self, user, permission, roles=None):
         """Raise Unauthorized if the the passed user hasn't passed permission 
         for this instance.
 
@@ -71,6 +73,9 @@ class PermissionBase(object):
             If passed, these roles will be assigned to the user temporarily
             before the permissions are checked.
         """
+        if roles is None:
+            roles = []
+
         if not self.has_permission(user, permission, roles):
             raise Unauthorized("User %s doesn't have permission %s for object %s" % (user, permission, self.slug))
 
@@ -126,7 +131,7 @@ class PermissionBase(object):
         return permissions.utils.get_local_roles(self, principal)
 
     def remove_role(self, principal, role):
-        """Adds a local role for the principal to the object.
+        """Removes a local role for the principal to the object.
 
         **Parameters:**
 

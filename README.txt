@@ -1,12 +1,7 @@
 What is it?
 ===========
 
-django-permissions provides per-object permissions for Django
-
-Documentation
-=============
-
-For more documentation please visit: http://packages.python.org/django-permissions/
+django-permissions provides per-object permissions for Django on roles: http://en.wikipedia.org/wiki/Role-based_access_control
 
 Code
 ====
@@ -21,6 +16,33 @@ a look at the CMS `LFC <http://pypi.python.org/pypi/django-lfc>`_
 
 Changes
 =======
+
+1.0.3 (2011-04-30)
+------------------
+
+Bugfix release
+
+* Bugfix: Removed mutuable parameters; issue #11
+
+Changes
+=======
+
+1.0.2 (2011-04-09)
+------------------
+
+Bugfix release
+
+* Bugfix: prevent to add same Users several times to a Role; issue #6 of django-workflows
+* Updated Development Status to "5 - Production/Stable"
+
+1.0.1 (2011-04-08)
+------------------
+
+Bugfix release
+
+* Bugfix: DatabaseErrors with Postgres; issue #5.
+* Bugfix: changed order of passed parameters to has_permission; issue #6
+* Bugfix: removed not needed import of "sets"; issue #8
 
 1.0 (2010-08-24)
 ----------------

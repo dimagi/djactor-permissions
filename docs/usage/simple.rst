@@ -58,7 +58,7 @@ Check permission
 .. code-block:: python
 
     >>> from permissions.utils import has_permission
-    >>> result = has_permission(content, user, "view")
+    >>> has_permission(content, user, "view")
     True
 
 This will check whether the current user has the permission "View" for the
