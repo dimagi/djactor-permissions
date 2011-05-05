@@ -1,14 +1,13 @@
 # django imports
 from django.contrib.flatpages.models import FlatPage
-from django.contrib.auth.models import Group
-from django.contrib.auth.models import User
 from django.conf import settings
 from django.core.urlresolvers import reverse
 from django.test import TestCase
 from django.test.client import Client
 
 # permissions imports
-from permissions.models import Permission
+from django.test.testcases import TransactionTestCase
+from permissions.models import Permission, Actor, ActorGroup
 from permissions.models import ObjectPermission
 from permissions.models import ObjectPermissionInheritanceBlock
 from permissions.models import Role
@@ -27,23 +26,23 @@ class BackendTestCase(TestCase):
         )
         
         self.role_1 = permissions.utils.register_role("Role 1")        
-        self.user = User.objects.create(username="john")
+        self.actor = Actor.objects.create(name="john")
         self.page_1 = FlatPage.objects.create(url="/page-1/", title="Page 1")
         self.view = permissions.utils.register_permission("View", "view")
         
-        # Add user to role
-        self.role_1.add_principal(self.user)
+        # Add actor to role
+        self.role_1.add_principal(self.actor)
 
     def test_has_perm(self):
         """Tests has perm of the backend.
         """
-        result = self.user.has_perm(self.view, self.page_1)
+        result = self.actor.has_perm(self.view, self.page_1)
         self.assertEqual(result, False)
         
         # assign view permission to role 1
         permissions.utils.grant_permission(self.page_1, self.role_1, self.view)
 
-        result = self.user.has_perm("view", self.page_1)
+        result = self.actor.has_perm("view", self.page_1)
         self.assertEqual(result, True)
     
 class RoleTestCase(TestCase):
@@ -55,10 +54,10 @@ class RoleTestCase(TestCase):
         self.role_1 = permissions.utils.register_role("Role 1")
         self.role_2 = permissions.utils.register_role("Role 2")
 
-        self.user = User.objects.create(username="john")
-        self.group = Group.objects.create(name="brights")
+        self.actor = Actor.objects.create(name="john")
+        self.group = ActorGroup.objects.create(name="brights")
 
-        self.user.groups.add(self.group)
+        self.actor.groups.add(self.group)
 
         self.page_1 = FlatPage.objects.create(url="/page-1/", title="Page 1")
         self.page_2 = FlatPage.objects.create(url="/page-1/", title="Page 2")
@@ -78,49 +77,49 @@ class RoleTestCase(TestCase):
         result = permissions.utils.get_role(42)
         self.assertEqual(result, None)
 
-        result = permissions.utils.get_user(self.user.id)
-        self.assertEqual(result, self.user)
+        result = permissions.utils.get_actor(self.actor.id)
+        self.assertEqual(result, self.actor)
 
-        result = permissions.utils.get_user(42)
+        result = permissions.utils.get_actor(42)
         self.assertEqual(result, None)
 
-    def test_global_roles_user(self):
+    def test_global_roles_actor(self):
         """
         """
         # Add role 1
-        result = permissions.utils.add_role(self.user, self.role_1)
+        result = permissions.utils.add_role(self.actor, self.role_1)
         self.assertEqual(result, True)
 
         # Add role 1 again
-        result = permissions.utils.add_role(self.user, self.role_1)
+        result = permissions.utils.add_role(self.actor, self.role_1)
         self.assertEqual(result, False)
 
-        result = permissions.utils.get_roles(self.user)
+        result = permissions.utils.get_roles(self.actor)
         self.assertEqual(result, [self.role_1])
 
         # Add role 2
-        result = permissions.utils.add_role(self.user, self.role_2)
+        result = permissions.utils.add_role(self.actor, self.role_2)
         self.assertEqual(result, True)
 
-        result = permissions.utils.get_roles(self.user)
+        result = permissions.utils.get_roles(self.actor)
         self.assertEqual(result, [self.role_1, self.role_2])
 
         # Remove role 1
-        result = permissions.utils.remove_role(self.user, self.role_1)
+        result = permissions.utils.remove_role(self.actor, self.role_1)
         self.assertEqual(result, True)
 
         # Remove role 1 again
-        result = permissions.utils.remove_role(self.user, self.role_1)
+        result = permissions.utils.remove_role(self.actor, self.role_1)
         self.assertEqual(result, False)
 
-        result = permissions.utils.get_roles(self.user)
+        result = permissions.utils.get_roles(self.actor)
         self.assertEqual(result, [self.role_2])
 
         # Remove role 2
-        result = permissions.utils.remove_role(self.user, self.role_2)
+        result = permissions.utils.remove_role(self.actor, self.role_2)
         self.assertEqual(result, True)
 
-        result = permissions.utils.get_roles(self.user)
+        result = permissions.utils.get_roles(self.actor)
         self.assertEqual(result, [])
 
     def test_global_roles_group(self):
@@ -162,29 +161,29 @@ class RoleTestCase(TestCase):
         result = permissions.utils.get_roles(self.group)
         self.assertEqual(result, [])
 
-    def test_remove_roles_user(self):
+    def test_remove_roles_actor(self):
         """
         """
         # Add role 1
-        result = permissions.utils.add_role(self.user, self.role_1)
+        result = permissions.utils.add_role(self.actor, self.role_1)
         self.assertEqual(result, True)
 
         # Add role 2
-        result = permissions.utils.add_role(self.user, self.role_2)
+        result = permissions.utils.add_role(self.actor, self.role_2)
         self.assertEqual(result, True)
 
-        result = permissions.utils.get_roles(self.user)
+        result = permissions.utils.get_roles(self.actor)
         self.assertEqual(result, [self.role_1, self.role_2])
 
         # Remove roles
-        result = permissions.utils.remove_roles(self.user)
+        result = permissions.utils.remove_roles(self.actor)
         self.assertEqual(result, True)
 
-        result = permissions.utils.get_roles(self.user)
+        result = permissions.utils.get_roles(self.actor)
         self.assertEqual(result, [])
 
         # Remove roles
-        result = permissions.utils.remove_roles(self.user)
+        result = permissions.utils.remove_roles(self.actor)
         self.assertEqual(result, False)
 
     def test_remove_roles_group(self):
@@ -212,43 +211,43 @@ class RoleTestCase(TestCase):
         result = permissions.utils.remove_roles(self.group)
         self.assertEqual(result, False)
 
-    def test_local_role_user(self):
+    def test_local_role_actor(self):
         """
         """
         # Add local role to page 1
-        result = permissions.utils.add_local_role(self.page_1, self.user, self.role_1)
+        result = permissions.utils.add_local_role(self.page_1, self.actor, self.role_1)
         self.assertEqual(result, True)
 
         # Again
-        result = permissions.utils.add_local_role(self.page_1, self.user, self.role_1)
+        result = permissions.utils.add_local_role(self.page_1, self.actor, self.role_1)
         self.assertEqual(result, False)
 
-        result = permissions.utils.get_local_roles(self.page_1, self.user)
+        result = permissions.utils.get_local_roles(self.page_1, self.actor)
         self.assertEqual(result, [self.role_1])
 
         # Add local role 2
-        result = permissions.utils.add_local_role(self.page_1, self.user, self.role_2)
+        result = permissions.utils.add_local_role(self.page_1, self.actor, self.role_2)
         self.assertEqual(result, True)
 
-        result = permissions.utils.get_local_roles(self.page_1, self.user)
+        result = permissions.utils.get_local_roles(self.page_1, self.actor)
         self.assertEqual(result, [self.role_1, self.role_2])
 
         # Remove role 1
-        result = permissions.utils.remove_local_role(self.page_1, self.user, self.role_1)
+        result = permissions.utils.remove_local_role(self.page_1, self.actor, self.role_1)
         self.assertEqual(result, True)
 
         # Remove role 1 again
-        result = permissions.utils.remove_local_role(self.page_1, self.user, self.role_1)
+        result = permissions.utils.remove_local_role(self.page_1, self.actor, self.role_1)
         self.assertEqual(result, False)
 
-        result = permissions.utils.get_local_roles(self.page_1, self.user)
+        result = permissions.utils.get_local_roles(self.page_1, self.actor)
         self.assertEqual(result, [self.role_2])
 
         # Remove role 2
-        result = permissions.utils.remove_local_role(self.page_1, self.user, self.role_2)
+        result = permissions.utils.remove_local_role(self.page_1, self.actor, self.role_2)
         self.assertEqual(result, True)
 
-        result = permissions.utils.get_local_roles(self.page_1, self.user)
+        result = permissions.utils.get_local_roles(self.page_1, self.actor)
         self.assertEqual(result, [])
 
     def test_local_role_group(self):
@@ -290,29 +289,29 @@ class RoleTestCase(TestCase):
         result = permissions.utils.get_local_roles(self.page_1, self.group)
         self.assertEqual(result, [])
 
-    def test_remove_local_roles_user(self):
+    def test_remove_local_roles_actor(self):
         """
         """
         # Add local role to page 1
-        result = permissions.utils.add_local_role(self.page_1, self.user, self.role_1)
+        result = permissions.utils.add_local_role(self.page_1, self.actor, self.role_1)
         self.assertEqual(result, True)
 
         # Add local role 2
-        result = permissions.utils.add_local_role(self.page_1, self.user, self.role_2)
+        result = permissions.utils.add_local_role(self.page_1, self.actor, self.role_2)
         self.assertEqual(result, True)
 
-        result = permissions.utils.get_local_roles(self.page_1, self.user)
+        result = permissions.utils.get_local_roles(self.page_1, self.actor)
         self.assertEqual(result, [self.role_1, self.role_2])
 
         # Remove all local roles
-        result = permissions.utils.remove_local_roles(self.page_1, self.user)
+        result = permissions.utils.remove_local_roles(self.page_1, self.actor)
         self.assertEqual(result, True)
 
-        result = permissions.utils.get_local_roles(self.page_1, self.user)
+        result = permissions.utils.get_local_roles(self.page_1, self.actor)
         self.assertEqual(result, [])
 
         # Remove all local roles again
-        result = permissions.utils.remove_local_roles(self.page_1, self.user)
+        result = permissions.utils.remove_local_roles(self.page_1, self.actor)
         self.assertEqual(result, False)
 
     def test_get_groups_1(self):
@@ -328,7 +327,7 @@ class RoleTestCase(TestCase):
         self.assertEqual(result[0].name, "brights")
 
         # Add another group
-        self.group_2 = Group.objects.create(name="atheists")
+        self.group_2 = ActorGroup.objects.create(name="atheists")
         result = permissions.utils.add_role(self.group_2, self.role_1)
 
         result = self.role_1.get_groups()
@@ -336,8 +335,8 @@ class RoleTestCase(TestCase):
         self.assertEqual(result[1].name, "atheists")
         self.assertEqual(len(result), 2)
 
-        # Add the role to an user
-        result = permissions.utils.add_role(self.user, self.role_1)
+        # Add the role to an actor
+        result = permissions.utils.add_role(self.actor, self.role_1)
         self.assertEqual(result, True)
 
         # This shouldn't have an effect on the result
@@ -359,7 +358,7 @@ class RoleTestCase(TestCase):
         self.assertEqual(result[0].name, "brights")
 
         # Add another local group
-        self.group_2 = Group.objects.create(name="atheists")
+        self.group_2 = ActorGroup.objects.create(name="atheists")
         result = permissions.utils.add_local_role(self.page_1, self.group_2, self.role_1)
 
         result = self.role_1.get_groups(self.page_1)
@@ -380,8 +379,8 @@ class RoleTestCase(TestCase):
         result = self.role_1.get_groups()
         self.assertEqual(result[0].name, "brights")
 
-        # Add the role to an user
-        result = permissions.utils.add_local_role(self.page_1, self.user, self.role_1)
+        # Add the role to an actor
+        result = permissions.utils.add_local_role(self.page_1, self.actor, self.role_1)
         self.assertEqual(result, True)
 
         # This shouldn't have an effect on the result
@@ -390,79 +389,79 @@ class RoleTestCase(TestCase):
         self.assertEqual(result[1].name, "atheists")
         self.assertEqual(len(result), 2)
 
-    def test_get_users_1(self):
-        """Tests global roles for users.
+    def test_get_actors_1(self):
+        """Tests global roles for actors.
         """
-        result = self.role_1.get_users()
+        result = self.role_1.get_actors()
         self.assertEqual(len(result), 0)
 
-        result = permissions.utils.add_role(self.user, self.role_1)
+        result = permissions.utils.add_role(self.actor, self.role_1)
         self.assertEqual(result, True)
 
-        result = self.role_1.get_users()
-        self.assertEqual(result[0].username, "john")
+        result = self.role_1.get_actors()
+        self.assertEqual(result[0].name, "john")
 
-        # Add another role to an user
-        self.user_2 = User.objects.create(username="jane")
-        result = permissions.utils.add_role(self.user_2, self.role_1)
+        # Add another role to an actor
+        self.actor_2 = Actor.objects.create(name="jane")
+        result = permissions.utils.add_role(self.actor_2, self.role_1)
 
-        result = self.role_1.get_users()
-        self.assertEqual(result[0].username, "john")
-        self.assertEqual(result[1].username, "jane")
+        result = self.role_1.get_actors()
+        self.assertEqual(result[0].name, "john")
+        self.assertEqual(result[1].name, "jane")
         self.assertEqual(len(result), 2)
 
-        # Add the role to an user
+        # Add the role to an actor
         result = permissions.utils.add_role(self.group, self.role_1)
         self.assertEqual(result, True)
 
         # This shouldn't have an effect on the result
-        result = self.role_1.get_users()
-        self.assertEqual(result[0].username, "john")
-        self.assertEqual(result[1].username, "jane")
+        result = self.role_1.get_actors()
+        self.assertEqual(result[0].name, "john")
+        self.assertEqual(result[1].name, "jane")
         self.assertEqual(len(result), 2)
 
-    def test_get_users_2(self):
-        """Tests local roles for users.
+    def test_get_actors_2(self):
+        """Tests local roles for actors.
         """
-        result = self.role_1.get_users(self.page_1)
+        result = self.role_1.get_actors(self.page_1)
         self.assertEqual(len(result), 0)
 
-        result = permissions.utils.add_local_role(self.page_1, self.user, self.role_1)
+        result = permissions.utils.add_local_role(self.page_1, self.actor, self.role_1)
         self.assertEqual(result, True)
 
-        result = self.role_1.get_users(self.page_1)
-        self.assertEqual(result[0].username, "john")
+        result = self.role_1.get_actors(self.page_1)
+        self.assertEqual(result[0].name, "john")
 
-        # Add another local role to an user
-        self.user_2 = User.objects.create(username="jane")
-        result = permissions.utils.add_local_role(self.page_1, self.user_2, self.role_1)
+        # Add another local role to an actor
+        self.actor_2 = Actor.objects.create(name="jane")
+        result = permissions.utils.add_local_role(self.page_1, self.actor_2, self.role_1)
 
-        result = self.role_1.get_users(self.page_1)
-        self.assertEqual(result[0].username, "john")
-        self.assertEqual(result[1].username, "jane")
+        result = self.role_1.get_actors(self.page_1)
+        self.assertEqual(result[0].name, "john")
+        self.assertEqual(result[1].name, "jane")
 
-        # A the global role to user
-        result = permissions.utils.add_role(self.user, self.role_1)
+        # A the global role to actor
+        result = permissions.utils.add_role(self.actor, self.role_1)
         self.assertEqual(result, True)
 
-        # Nontheless there are just two users returned (and no duplicate)
-        result = self.role_1.get_users(self.page_1)
-        self.assertEqual(result[0].username, "john")
-        self.assertEqual(result[1].username, "jane")
+        # Nontheless there are just two actors returned (and no duplicate)
+        result = self.role_1.get_actors(self.page_1)
+        self.assertEqual(result[0].name, "john")
+        self.assertEqual(result[1].name, "jane")
         self.assertEqual(len(result), 2)
 
-        # Andere there should one user for the global role
-        result = self.role_1.get_users()
-        self.assertEqual(result[0].username, "john")
+        # Andere there should one actor for the global role
+        result = self.role_1.get_actors()
+        self.assertEqual(result[0].name, "john")
 
         # Add the role to an group
         result = permissions.utils.add_local_role(self.page_1, self.group, self.role_1)
         self.assertEqual(result, True)
 
         # This shouldn't have an effect on the result
-        result = self.role_1.get_users(self.page_1)
-        self.assertEqual(result[0].username, "john")
-        self.assertEqual(result[1].username, "jane")
+        result = self.role_1.get_actors(self.page_1)
+        self.assertEqual(result[0].name, "john")
+        self.assertEqual(result[1].name, "jane")
         self.assertEqual(len(result), 2)
 
 class PermissionTestCase(TestCase):
@@ -474,9 +473,9 @@ class PermissionTestCase(TestCase):
         self.role_1 = permissions.utils.register_role("Role 1")
         self.role_2 = permissions.utils.register_role("Role 2")
 
-        self.user = User.objects.create(username="john")
-        permissions.utils.add_role(self.user, self.role_1)
-        self.user.save()
+        self.actor = Actor.objects.create(name="john")
+        permissions.utils.add_role(self.actor, self.role_1)
+        self.actor.save()
 
         self.page_1 = FlatPage.objects.create(url="/page-1/", title="Page 1")
         self.page_2 = FlatPage.objects.create(url="/page-1/", title="Page 2")
@@ -516,25 +515,25 @@ class PermissionTestCase(TestCase):
     def test_has_permission_role(self):
         """
         """
-        result = permissions.utils.has_permission(self.page_1, self.user, "view")
+        result = permissions.utils.has_permission(self.page_1, self.actor, "view")
         self.assertEqual(result, False)
 
         result = permissions.utils.grant_permission(self.page_1, self.role_1, self.permission)
         self.assertEqual(result, True)
 
-        result = permissions.utils.has_permission(self.page_1, self.user, "view")
+        result = permissions.utils.has_permission(self.page_1, self.actor, "view")
         self.assertEqual(result, True)
 
         result = permissions.utils.remove_permission(self.page_1, self.role_1, "view")
         self.assertEqual(result, True)
 
-        result = permissions.utils.has_permission(self.page_1, self.user, "view")
+        result = permissions.utils.has_permission(self.page_1, self.actor, "view")
         self.assertEqual(result, False)
 
     def test_has_permission_owner(self):
         """
         """
-        creator = User.objects.create(username="jane")
+        creator = Actor.objects.create(name="jane")
 
         result = permissions.utils.has_permission(self.page_1, creator, "view")
         self.assertEqual(result, False)
@@ -548,13 +547,13 @@ class PermissionTestCase(TestCase):
     def test_local_role(self):
         """
         """
-        result = permissions.utils.has_permission(self.page_1, self.user, "view")
+        result = permissions.utils.has_permission(self.page_1, self.actor, "view")
         self.assertEqual(result, False)
 
         permissions.utils.grant_permission(self.page_1, self.role_2, self.permission)
-        permissions.utils.add_local_role(self.page_1, self.user, self.role_2)
+        permissions.utils.add_local_role(self.page_1, self.actor, self.role_2)
 
-        result = permissions.utils.has_permission(self.page_1, self.user, "view")
+        result = permissions.utils.has_permission(self.page_1, self.actor, "view")
         self.assertEqual(result, True)
 
     def test_ineritance(self):
@@ -608,7 +607,7 @@ class PermissionTestCase(TestCase):
         result = permissions.utils.grant_permission(self.page_1, self.role_1, "view")
         self.assertEqual(result, True)
 
-        result = permissions.utils.has_permission(self.page_1, self.user, "view")
+        result = permissions.utils.has_permission(self.page_1, self.actor, "view")
         self.assertEqual(result, True)
 
         permissions.utils.add_inheritance_block(self.page_1, "view")
@@ -618,7 +617,7 @@ class PermissionTestCase(TestCase):
 
         permissions.utils.reset(self.page_1)
 
-        result = permissions.utils.has_permission(self.page_1, self.user, "view")
+        result = permissions.utils.has_permission(self.page_1, self.actor, "view")
         self.assertEqual(result, False)
 
         result = permissions.utils.is_inherited(self.page_1, "view")
@@ -626,7 +625,7 @@ class PermissionTestCase(TestCase):
 
         permissions.utils.reset(self.page_1)
 
-class RegistrationTestCase(TestCase):
+class RegistrationTestCase(TransactionTestCase):
     """Tests the registration of different components.
     """
     def test_group(self):
@@ -634,17 +633,17 @@ class RegistrationTestCase(TestCase):
         """
         # Register a group
         result = permissions.utils.register_group("Brights")
-        self.failUnless(isinstance(result, Group))
+        self.failUnless(isinstance(result, ActorGroup))
 
         # It's there
-        group = Group.objects.get(name="Brights")
+        group = ActorGroup.objects.get(name="Brights")
         self.assertEqual(group.name, "Brights")
 
         # Trying to register another group with same name
         result = permissions.utils.register_group("Brights")
         self.assertEqual(result, False)
 
-        group = Group.objects.get(name="Brights")
+        group = ActorGroup.objects.get(name="Brights")
         self.assertEqual(group.name, "Brights")
 
         # Unregister the group
@@ -652,7 +651,7 @@ class RegistrationTestCase(TestCase):
         self.assertEqual(result, True)
 
         # It's not there anymore
-        self.assertRaises(Group.DoesNotExist, Group.objects.get, name="Brights")
+        self.assertRaises(ActorGroup.DoesNotExist, ActorGroup.objects.get, name="Brights")
 
         # Trying to unregister the group again
         result = permissions.utils.unregister_group("Brights")
@@ -727,7 +726,6 @@ class RegistrationTestCase(TestCase):
 
 # django imports
 from django.core.handlers.wsgi import WSGIRequest
-from django.contrib.auth.models import User
 from django.contrib.sessions.backends.file import SessionStore
 from django.test.client import Client
 
@@ -776,7 +774,7 @@ def create_request():
     request.session = SessionStore()
 
     user = User()
-    user.is_superuser = True
+    user.is_supeuser = True
     user.save()
     request.user = user
 

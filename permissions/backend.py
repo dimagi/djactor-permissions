@@ -23,7 +23,7 @@ class ObjectPermissionsBackend(object):
     def authenticate(self, username, password):
         return None
 
-    def has_perm(self, user_obj, perm, obj=None):
+    def has_perm(self, actor_obj, perm, obj=None):
         """Checks whether the passed user has passed permission for passed
         object (obj).
 
@@ -36,10 +36,10 @@ class ObjectPermissionsBackend(object):
         perm
             The permission's codename which should be checked.
 
-        user_obj
+        actor_obj
             The user for which the permission should be checked.
 
         obj
             The object for which the permission should be checked.
         """
-        return permissions.utils.has_permission(obj, user_obj, perm)
+        return permissions.utils.has_permission(obj, actor_obj, perm)
