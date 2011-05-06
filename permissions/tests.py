@@ -66,7 +66,7 @@ class RoleTestCase(TestCase):
         """
         """
         # Group
-        result = permissions.utils.get_group(self.group.id)
+        result = permissions.utils.get_group_by_id(self.group.id)
         self.assertEqual(result, self.group)
 
         result = permissions.utils.get_group(42)
@@ -79,7 +79,7 @@ class RoleTestCase(TestCase):
         self.assertEqual(result, None)
 
         # Role
-        result = permissions.utils.get_role(self.role_1.id)
+        result = permissions.utils.get_role_by_id(self.role_1.id)
         self.assertEqual(result, self.role_1)
 
         result = permissions.utils.get_role(42)
@@ -91,19 +91,19 @@ class RoleTestCase(TestCase):
         result = permissions.utils.get_role("Not Existing")
         self.assertEqual(result, None)
 
-        result = permissions.utils.get_user(self.user.id)
-        self.assertEqual(result, self.user)
+        result = permissions.utils.get_actor_by_id(self.actor.id)
+        self.assertEqual(result, self.actor)
 
-        result = permissions.utils.get_actor(42)
+        result = permissions.utils.get_actor_by_id(42)
         self.assertEqual(result, None)
 
-        result = permissions.utils.get_user(self.user.username)
-        self.assertEqual(result, self.user)
+        result = permissions.utils.get_actor(self.actor.name)
+        self.assertEqual(result, self.actor)
 
-        result = permissions.utils.get_user("Not Existing")
+        result = permissions.utils.get_actor("Not Existing")
         self.assertEqual(result, None)
 
-    def test_global_roles_user(self):
+    def test_global_roles_actor(self):
         """
         """
         # Add role 1
@@ -114,14 +114,14 @@ class RoleTestCase(TestCase):
         result = permissions.utils.add_role(self.actor, self.role_1)
         self.assertEqual(result, False)
 
-        result = permissions.utils.get_roles(self.user)
+        result = permissions.utils.get_roles(self.actor)
         self.assertEqual(list(result), [self.role_1])
 
         # Add role 2
         result = permissions.utils.add_role(self.actor, self.role_2)
         self.assertEqual(result, True)
 
-        result = permissions.utils.get_roles(self.user)
+        result = permissions.utils.get_roles(self.actor)
         self.assertEqual(list(result), [self.role_1, self.role_2])
 
         # Remove role 1
@@ -132,14 +132,14 @@ class RoleTestCase(TestCase):
         result = permissions.utils.remove_role(self.actor, self.role_1)
         self.assertEqual(result, False)
 
-        result = permissions.utils.get_roles(self.user)
+        result = permissions.utils.get_roles(self.actor)
         self.assertEqual(list(result), [self.role_2])
 
         # Remove role 2
         result = permissions.utils.remove_role(self.actor, self.role_2)
         self.assertEqual(result, True)
 
-        result = permissions.utils.get_roles(self.user)
+        result = permissions.utils.get_roles(self.actor)
         self.assertEqual(list(result), [])
 
     def test_global_roles_group(self):
@@ -192,14 +192,14 @@ class RoleTestCase(TestCase):
         result = permissions.utils.add_role(self.actor, self.role_2)
         self.assertEqual(result, True)
 
-        result = permissions.utils.get_roles(self.user)
+        result = permissions.utils.get_roles(self.actor)
         self.assertEqual(list(result), [self.role_1, self.role_2])
 
         # Remove roles
         result = permissions.utils.remove_roles(self.actor)
         self.assertEqual(result, True)
 
-        result = permissions.utils.get_roles(self.user)
+        result = permissions.utils.get_roles(self.actor)
         self.assertEqual(list(result), [])
 
         # Remove roles
@@ -484,17 +484,17 @@ class RoleTestCase(TestCase):
         self.assertEqual(result[1].name, "jane")
         self.assertEqual(len(result), 2)
         
-    def test_get_users_3(self):
+    def test_get_actors_3(self):
         """
         """
-        self.role_1.add_principal(self.user)
-        result = self.role_1.get_users()
-        self.assertEqual(result, [self.user])
+        self.role_1.add_principal(self.actor)
+        result = self.role_1.get_actors()
+        self.assertEqual(result, [self.actor])
         
-        # Add same user again
-        self.role_1.add_principal(self.user)
-        result = self.role_1.get_users()
-        self.assertEqual(result, [self.user])
+        # Add same actor again
+        self.role_1.add_principal(self.actor)
+        result = self.role_1.get_actors()
+        self.assertEqual(result, [self.actor])
 
 class PermissionTestCase(TestCase):
     """
@@ -805,9 +805,9 @@ def create_request():
     request = rf.get('/')
     request.session = SessionStore()
 
-    user = User()
-    user.is_supeuser = True
-    user.save()
-    request.user = user
+    actor = Actor()
+    #actor.is_supeactor = True
+    actor.save()
+    request.actor = actor
 
     return request

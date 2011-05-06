@@ -32,7 +32,7 @@ def add_role(principal, role):
     """
     if isinstance(principal, Actor):
         try:
-            PrincipalRoleRelation.objects.get(user=principal, role=role, content_id=None, content_type=None)
+            PrincipalRoleRelation.objects.get(actor=principal, role=role, content_id=None, content_type=None)
         except PrincipalRoleRelation.DoesNotExist:
             PrincipalRoleRelation.objects.create(actor=principal, role=role)
             return True
@@ -62,7 +62,7 @@ def add_local_role(obj, principal, role):
     ctype = ContentType.objects.get_for_model(obj)
     if isinstance(principal, Actor):
         try:
-            PrincipalRoleRelation.objects.get(user=principal, role=role, content_id=obj.id, content_type=ctype)
+            PrincipalRoleRelation.objects.get(actor=principal, role=role, content_id=obj.id, content_type=ctype)
         except PrincipalRoleRelation.DoesNotExist:
             PrincipalRoleRelation.objects.create(actor=principal, role=role, content=obj)
             return True
@@ -201,8 +201,7 @@ def get_roles(principal, obj=None):
 
     """
     role_ids = []
-    groups = user.groups.all()
-    groups_ids_str = ", ".join([str(g.id) for g in groups])
+    groups = principal.groups.all()
 
     if isinstance(principal, Actor):
         groups = principal.groups.all()
@@ -219,13 +218,13 @@ def get_roles(principal, obj=None):
     if groups_ids_str:
         cursor.execute("""SELECT role_id
                           FROM permissions_principalrolerelation
-                          WHERE (user_id=%s OR group_id IN (%s))
-                          AND content_id is Null""" % (user.id, groups_ids_str))
+                          WHERE (actor_id='%s' OR group_id IN (%s))
+                          AND content_id is Null""" % (principal.id, groups_ids_str))
     else:
         cursor.execute("""SELECT role_id
                           FROM permissions_principalrolerelation
-                          WHERE user_id=%s
-                          AND content_id is Null""" % user.id)
+                          WHERE actor_id=%s
+                          AND content_id is Null""" % principal.id)
 
     for row in cursor.fetchall():
         role_ids.append(row[0])
@@ -238,15 +237,15 @@ def get_roles(principal, obj=None):
         if groups_ids_str:
             cursor.execute("""SELECT role_id
                               FROM permissions_principalrolerelation
-                              WHERE (user_id='%s' OR group_id IN (%s))
+                              WHERE (actor_id='%s' OR group_id IN (%s))
                               AND content_id='%s'
-                              AND content_type_id='%s'""" % (user.id, groups_ids_str, obj.id, ctype.id))
+                              AND content_type_id='%s'""" % (principal.id, groups_ids_str, obj.id, ctype.id))
         else:
             cursor.execute("""SELECT role_id
                               FROM permissions_principalrolerelation
-                              WHERE user_id='%s'
+                              WHERE actor_id='%s'
                               AND content_id='%s'
-                              AND content_type_id='%s'""" % (user.id, obj.id, ctype.id))
+                              AND content_type_id='%s'""" % (principal.id, obj.id, ctype.id))
 
         for row in cursor.fetchall():
             role_ids.append(row[0])
@@ -263,12 +262,12 @@ def get_global_roles(principal):
     """
     if isinstance(principal, Actor):
         return [prr.role for prr in PrincipalRoleRelation.objects.filter(
-            actor=principal, content_id=None, content_type=None)]
+            actor=principal, content_id=None, content_type=None).order_by('role')]
     else:
         if isinstance(principal, ActorGroup):
             principal = (principal,)
         return [prr.role for prr in PrincipalRoleRelation.objects.filter(
-            group__in=principal, content_id=None, content_type=None)]
+            group__in=principal, content_id=None, content_type=None).order_by('role')]
 
 def get_local_roles(obj, principal):
     """Returns *direct* local roles for passed principal and content object.
@@ -277,10 +276,10 @@ def get_local_roles(obj, principal):
 
     if isinstance(principal, Actor):
         return [prr.role for prr in PrincipalRoleRelation.objects.filter(
-            actor=principal, content_id=obj.id, content_type=ctype)]
+            actor=principal, content_id=obj.id, content_type=ctype).order_by('role')]
     else:
         return [prr.role for prr in PrincipalRoleRelation.objects.filter(
-            group=principal, content_id=obj.id, content_type=ctype)]
+            group=principal, content_id=obj.id, content_type=ctype).order_by('role')]
 
 # Permissions ################################################################
 
@@ -322,9 +321,7 @@ def grant_permission(obj, role, permission):
         The permission which should be granted. Either a permission
         object or the codename of a permission.
     """
-    print permission
     if not isinstance(permission, Permission):
-        print "not a freaking instance of a permission?"
         try:
             permission = Permission.objects.get(codename = permission)
         except Permission.DoesNotExist:
@@ -400,13 +397,12 @@ def has_permission(obj, actor, codename, roles=None):
 #    if actor.is_superuser:
 #        return True
 #
-#    if not actor.is_anonymous():
-#        roles.extend(get_roles(actor, obj))
+    roles.extend(get_roles(actor, obj))
 
     result = False
     while obj is not None:
         p = ObjectPermission.objects.filter(
-            content_type=ct, content_id=obj.id, role__in=roles, permission__codename = codename).values("id")
+            content_type=ctype, content_id=obj.id, role__in=roles, permission__codename = codename).values("id")
 
         if len(p) > 0:
             result = True
@@ -418,7 +414,7 @@ def has_permission(obj, actor, codename, roles=None):
 
         try:
             obj = obj.get_parent_for_permissions()
-            ct = ContentType.objects.get_for_model(obj)
+            ctype = ContentType.objects.get_for_model(obj)
         except AttributeError:
             result = False
             break
@@ -428,7 +424,6 @@ def has_permission(obj, actor, codename, roles=None):
 
 # Inheritance ################################################################
 
-@transaction.commit_manually
 def add_inheritance_block(obj, permission):
     """Adds an inheritance for the passed permission on the passed obj.
 
@@ -453,7 +448,6 @@ def add_inheritance_block(obj, permission):
         try:
             ObjectPermissionInheritanceBlock.objects.create(content=obj, permission=permission)
         except IntegrityError:
-            transaction.rollback()
             return False
     return True
 
@@ -506,23 +500,36 @@ def is_inherited(obj, codename):
     else:
         return False
 
+def get_group_by_id(id):
+    try:
+        return ActorGroup.objects.get(pk=id)
+    except ActorGroup.DoesNotExist:
+        return None
+
 def get_group(name):
-    """Returns the group with passed id or None.
+    """Returns the group with passed group name.
     """
-    if isinstance(name, (int, long)):
-        warnings.warn(
-            "The use of get_group with an id is deprecated, please use the group name instead.",
-            PendingDeprecationWarning
-        )
-        try:
-            return Group.objects.get(pk=name)
-        except Group.DoesNotExist:
-            return None
-    else:
-        try:
-            return Group.objects.get(name=name)
-        except Group.DoesNotExist:
-            return None
+    
+    try:
+        return ActorGroup.objects.get(name=name)
+    except ActorGroup.DoesNotExist:
+        return None
+
+
+
+
+
+
+
+
+
+
+def get_role_by_id(id):
+    try:
+        return Role.objects.get(pk=id)
+    except Role.DoesNotExist:
+        return None
+
 
 def get_role(name):
     """Returns the role with passed name or None.
@@ -541,6 +548,24 @@ def get_role(name):
             return Role.objects.get(name=name)
         except Role.DoesNotExist:
             return None
+
+
+def get_actors(user):
+    return Actor.objects.filter(user=user)
+
+def get_actor_by_id(id):
+    try:
+        return Actor.objects.get(id=id)
+    except Actor.DoesNotExist:
+        return None
+
+
+def get_actor(name):
+    try:
+        return Actor.objects.get(name=name)
+    except Actor.DoesNotExist:
+        return None
+
 
 def get_user(username):
     """Returns the user with passed id or None.
@@ -583,8 +608,7 @@ def reset(obj):
 
 # Registering ################################################################
 
-@transaction.commit_manually
-def register_permission(name, codename, ctypes=[]):
+def register_permission(name, codename, ctypes=None):
     """Registers a permission to the framework. Returns the permission if the
     registration was successfully, otherwise False.
 
@@ -633,7 +657,6 @@ def unregister_permission(codename):
     permission.delete()
     return True
 
-@transaction.commit_manually
 def register_role(name):
     """Registers a role with passed name to the framework. Returns the new
     role if the registration was successfully, otherwise False.
@@ -665,7 +688,6 @@ def unregister_role(name):
     role.delete()
     return True
 
-@transaction.commit_manually
 def register_group(name):
     """Registers a group with passed name to the framework. Returns the new
     group if the registration was successfully, otherwise False.
@@ -677,7 +699,7 @@ def register_group(name):
     name
         The unique group name.
     """
-    group, created = Group.objects.get_or_create(name=name)
+    group, created = ActorGroup.objects.get_or_create(name=name)
     if created:
         return group
     else:

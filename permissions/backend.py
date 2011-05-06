@@ -22,15 +22,15 @@ class ObjectPermissionsBackend(object):
     def authenticate(self, username, password):
         return None
 
-    def has_permission(self, user_obj, perm, obj=None):
+    def has_permission(self, actor_obj, perm, obj=None):
         import warnings
         warnings.warn(
             "The use of has_permission is deprecated, please use the has_perm instead.",
             PendingDeprecationWarning
         )
-        return self.has_perm(user_obj, perm, obj)
+        return self.has_perm(actor_obj, perm, obj)
 
-    def has_perm(self, user_obj, perm, obj=None):
+    def has_perm(self, actor_obj, perm, obj=None):
         """Checks whether the passed user has passed permission for passed
         object (obj).
 

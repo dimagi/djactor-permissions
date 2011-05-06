@@ -1,7 +1,7 @@
 # django imports
+from datetime import datetime
 from django.db import models
 from django.contrib.auth.models import User
-from django.contrib.auth.models import Group
 from django.contrib.contenttypes import generic
 from django.contrib.contenttypes.models import ContentType
 from django.utils.translation import ugettext_lazy as _
@@ -16,6 +16,8 @@ class ActorGroup(models.Model):
     name = models.CharField(_("Actor Group Name"), max_length=160, unique=True)
 
 
+    class Meta:
+        ordering = ("name", )
 
 def _actor_has_perm(actor, perm, obj):
     logging.error("actor_has_perm #%s# #%s# #%s#" % (actor, perm, obj))
@@ -60,7 +62,11 @@ class Actor(models.Model):
 
     groups = models.ManyToManyField(ActorGroup, blank=True, null=True)
 
+    class Meta:
+        ordering = ('created_date',)
 
+    def __unicode__(self):
+        return "Actor (%s) %s" % (self.id, self.name)
 
 
     #taken from the User model for permission handling
@@ -251,16 +257,19 @@ class PrincipalRoleRelation(models.Model):
         The content object which gets the local role (optional).
     """
     actor = models.ForeignKey(Actor, verbose_name=_(u"Actor"), blank=True, null=True)
-    group = models.ForeignKey(ActorGroup, verbose_name=_(u"Group"), blank=True, null=True)
+    group = models.ForeignKey(ActorGroup, verbose_name=_(u"ActorGroup"), blank=True, null=True)
     role = models.ForeignKey(Role, verbose_name=_(u"Role"))
 
     content_type = models.ForeignKey(ContentType, verbose_name=_(u"Content type"), blank=True, null=True)
     content_id = models.CharField(max_length=32, verbose_name=_(u"Content id"), blank=True, null=True)
     content = generic.GenericForeignKey(ct_field="content_type", fk_field="content_id")
+
+    class Meta:
+        order_with_respect_to='role'
     
     def __unicode__(self):
-        if self.user:
-            principal = self.user.username
+        if self.actor:
+            principal = self.actor.name
         else:
             principal = self.group
         
@@ -269,13 +278,13 @@ class PrincipalRoleRelation(models.Model):
     def get_principal(self):
         """Returns the principal.
         """
-        return self.user or self.group
+        return self.actor or self.group
 
     def set_principal(self, principal):
         """Sets the principal.
         """
-        if isinstance(principal, User):
-            self.user = principal
+        if isinstance(principal, Actor):
+            self.actor = principal
         else:
             self.group = principal
 

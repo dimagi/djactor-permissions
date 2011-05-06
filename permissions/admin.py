@@ -10,10 +10,4 @@ from permissions.models import Role
 admin.site.register(Role)
 
 from permissions.models import PrincipalRoleRelation
-
-class PrincipalRoleRelationAdmin(admin.ModelAdmin):
-    list_display = ('principal', 'role', 'content_type', 'content')
-    list_filter = ('group', 'role',)
-    
-admin.site.register(PrincipalRoleRelation, PrincipalRoleRelationAdmin)
-
+admin.site.register(PrincipalRoleRelation)
