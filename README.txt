@@ -1,5 +1,6 @@
 What is it?
 ===========
+This branch of django-permissions is modified for use for Dimagi's medical applications, with more indirection from the django user model.
 
 django-permissions provides per-object permissions for Django on roles: http://en.wikipedia.org/wiki/Role-based_access_control
 
