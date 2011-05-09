@@ -1,5 +1,6 @@
 # python imports
 import warnings
+import logging
 
 # django imports
 from django.db import IntegrityError
