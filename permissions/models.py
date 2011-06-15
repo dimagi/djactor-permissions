@@ -9,7 +9,7 @@ from django.contrib import auth
 import logging
 import uuid
 def make_uuid():
-    return uuid.uuid1().hex
+    return uuid.uuid4().hex
 
 class ActorGroup(models.Model):
     id = models.CharField(max_length=32, unique=True, default=make_uuid, primary_key=True, editable=False)
