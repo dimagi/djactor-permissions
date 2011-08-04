@@ -489,7 +489,7 @@ def is_inherited(obj, codename):
         The content object for which the permission should be checked.
 
     codename
-        The permission which should be checked. Must be the codename of the 
+        The permission which should be checked. Must be the codename of the
         permission.
     """
     ct = ContentType.objects.get_for_model(obj)
@@ -630,7 +630,7 @@ def register_permission(name, codename, ctypes=None):
     if ctypes is None:
         ctypes = []
 
-    # Permission with same codename and/or name must not exist.
+    # Permission with same codename and/or name must not exist. The codename must be unique
     if Permission.objects.filter(Q(name=name) | Q(codename=codename)):
         return False
 
