@@ -49,9 +49,10 @@ class Actor(models.Model):
     A user can have multiple actors for it, each having a unique set of roles given to it.
     """
     id = models.CharField(max_length=32, unique=True, default=make_uuid, primary_key=True, editable=False)
+    doc_id = models.CharField(max_length=32, db_index=True, unique=True, editable=False, blank=True, null=True)
 
     name = models.CharField(_("Actor Name"), max_length=160, unique=True)
-    user = models.ForeignKey(User, null=True, blank=True)
+    user = models.ForeignKey(User, null=True, blank=True, related_name='actors')
 
     is_active = models.BooleanField(default=True)
     suspended = models.BooleanField(default=False)
@@ -67,7 +68,6 @@ class Actor(models.Model):
 
     def __unicode__(self):
         return "Actor (%s) %s" % (self.id, self.name)
-
 
     #taken from the User model for permission handling
     def has_perm(self, perm, obj=None):
@@ -139,7 +139,7 @@ class Permission(models.Model):
     content_types = models.ManyToManyField(ContentType, verbose_name=_(u"Content Types"), blank=True, null=True, related_name="content_types")
 
     def __unicode__(self):
-        return "%s (%s)" % (self.name, self.codename)
+        return "(%s) %s" % (self.name, self.codename)
 
 class ObjectPermission(models.Model):
     """Grants permission for a role and an content object (optional).
@@ -198,7 +198,7 @@ class Role(models.Model):
     name = models.CharField(max_length=100, unique=True)
 
     class Meta:
-        ordering = ["name", ]
+        ordering = ("name", )
 
     def __unicode__(self):
         return self.name
@@ -264,8 +264,8 @@ class PrincipalRoleRelation(models.Model):
     content_id = models.CharField(max_length=32, verbose_name=_(u"Content id"), blank=True, null=True)
     content = generic.GenericForeignKey(ct_field="content_type", fk_field="content_id")
 
-    class Meta:
-        order_with_respect_to='role'
+    #class Meta:
+    #    order_with_respect_to='role'
     
     def __unicode__(self):
         if self.actor:
