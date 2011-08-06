@@ -49,7 +49,7 @@ class Actor(models.Model):
     A user can have multiple actors for it, each having a unique set of roles given to it.
     """
     id = models.CharField(max_length=32, unique=True, default=make_uuid, primary_key=True, editable=False)
-    doc_id = models.CharField(max_length=32, db_index=True, unique=True, editable=False, blank=True, null=True)
+    doc_id = models.CharField(max_length=32, db_index=True, unique=True, editable=False, null=True) 
 
     name = models.CharField(_("Actor Name"), max_length=160, unique=True)
     user = models.ForeignKey(User, null=True, blank=True, related_name='actors')
