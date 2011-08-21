@@ -658,7 +658,7 @@ def unregister_permission(codename):
     permission.delete()
     return True
 
-def register_role(name):
+def register_role(name, display):
     """Registers a role with passed name to the framework. Returns the new
     role if the registration was successfully, otherwise False.
 
@@ -667,7 +667,7 @@ def register_role(name):
     name
         The unique role name.
     """
-    role, created = Role.objects.get_or_create(name=name)
+    role, created = Role.objects.get_or_create(name=name, display=display)
     if created:
         return role
     else:
