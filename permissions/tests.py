@@ -25,7 +25,7 @@ class BackendTestCase(TestCase):
             'permissions.backend.ObjectPermissionsBackend',
         )
         
-        self.role_1 = permissions.utils.register_role("Role 1")        
+        self.role_1 = permissions.utils.register_role("Role 1", 'role1')
         self.actor = Actor.objects.create(name="john")
         self.page_1 = FlatPage.objects.create(url="/page-1/", title="Page 1")
         self.view = permissions.utils.register_permission("View", "view")
@@ -51,8 +51,8 @@ class RoleTestCase(TestCase):
     def setUp(self):
         """
         """
-        self.role_1 = permissions.utils.register_role("Role 1")
-        self.role_2 = permissions.utils.register_role("Role 2")
+        self.role_1 = permissions.utils.register_role("Role 1", 'role1')
+        self.role_2 = permissions.utils.register_role("Role 2", 'role2')
 
         self.actor = Actor.objects.create(name="john")
         self.group = ActorGroup.objects.create(name="brights")
@@ -502,8 +502,8 @@ class PermissionTestCase(TestCase):
     def setUp(self):
         """
         """
-        self.role_1 = permissions.utils.register_role("Role 1")
-        self.role_2 = permissions.utils.register_role("Role 2")
+        self.role_1 = permissions.utils.register_role("Role 1", 'role1')
+        self.role_2 = permissions.utils.register_role("Role 2", 'role1')
 
         self.actor = Actor.objects.create(name="john")
         permissions.utils.add_role(self.actor, self.role_1)
@@ -570,7 +570,7 @@ class PermissionTestCase(TestCase):
         result = permissions.utils.has_permission(self.page_1, creator, "view")
         self.assertEqual(result, False)
 
-        owner = permissions.utils.register_role("Owner")
+        owner = permissions.utils.register_role("Owner", 'owner')
         permissions.utils.grant_permission(self.page_1, owner, "view")
 
         result = permissions.utils.has_permission(self.page_1, creator, "view", [owner])
@@ -693,7 +693,7 @@ class RegistrationTestCase(TransactionTestCase):
         """Tests registering/unregistering of a role.
         """
         # Register a role
-        result = permissions.utils.register_role("Editor")
+        result = permissions.utils.register_role("Editor", 'editor')
         self.failUnless(isinstance(result, Role))
 
         # It's there
@@ -701,7 +701,7 @@ class RegistrationTestCase(TransactionTestCase):
         self.assertEqual(role.name, "Editor")
 
         # Trying to register another role with same name
-        result = permissions.utils.register_role("Editor")
+        result = permissions.utils.register_role("Editor", 'editor')
         self.assertEqual(result, False)
 
         role = Role.objects.get(name="Editor")

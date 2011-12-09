@@ -139,7 +139,7 @@ class Permission(models.Model):
     content_types = models.ManyToManyField(ContentType, verbose_name=_(u"Content Types"), blank=True, null=True, related_name="content_types")
 
     def __unicode__(self):
-        return "(%s) %s" % (self.name, self.codename)
+        return u"%s (%s)" % (self.name, self.codename)
 
 class ObjectPermission(models.Model):
     """Grants permission for a role and an content object (optional).
@@ -265,8 +265,8 @@ class PrincipalRoleRelation(models.Model):
     content_id = models.CharField(max_length=32, verbose_name=_(u"Content id"), blank=True, null=True)
     content = generic.GenericForeignKey(ct_field="content_type", fk_field="content_id")
 
-    #class Meta:
-    #    order_with_respect_to='role'
+    class Meta:
+        order_with_respect_to='role'
     
     def __unicode__(self):
         if self.actor:

@@ -420,7 +420,6 @@ def has_permission(obj, actor, codename, roles=None):
             result = False
             break
 
-    _cache_permission(actor, cache_key, result)
     return result
 
 # Inheritance ################################################################
@@ -724,40 +723,3 @@ def unregister_group(name):
 
     group.delete()
     return True
-
-def _cache_permission(actor, cache_key, data):
-    """Stores the passed data on the passed actor object.
-
-    **Parameters:**
-
-    actor
-        The actor on which the data is stored.
-
-    cache_key
-        The key under which the data is stored.
-
-    data
-        The data which is stored.
-    """
-    if not getattr(actor, "permissions", None):
-        actor.permissions = {}
-    actor.permissions[cache_key] = data
-
-def _get_cached_permission(actor, cache_key):
-    """Returns the stored data from passed actor object for passed cache_key.
-
-    **Parameters:**
-
-    actor
-        The actor from which the data is retrieved.
-
-    cache_key
-        The key under which the data is stored.
-
-    """
-    permissions = getattr(actor, "permissions", None)
-    if permissions:
-        logging.error("get_cached_permissions: got permissions %s" % (permissions))
-        return actor.permissions.get(cache_key, None)
-    else:
-        logging.error("don't got no permissions")
