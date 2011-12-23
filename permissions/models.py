@@ -49,7 +49,7 @@ class Actor(models.Model):
     A user can have multiple actors for it, each having a unique set of roles given to it.
     """
     id = models.CharField(max_length=32, unique=True, default=make_uuid, primary_key=True, editable=False)
-    doc_id = models.CharField(max_length=32, db_index=True, unique=True, editable=False, null=True) 
+    doc_id = models.CharField(max_length=32, db_index=True, unique=True, editable=False, null=True)
 
     name = models.CharField(_("Actor Name"), max_length=160, unique=True)
     user = models.ForeignKey(User, null=True, blank=True, related_name='actors')
@@ -257,7 +257,7 @@ class PrincipalRoleRelation(models.Model):
     content
         The content object which gets the local role (optional).
     """
-    actor = models.ForeignKey(Actor, verbose_name=_(u"Actor"), blank=True, null=True)
+    actor = models.ForeignKey(Actor, verbose_name=_(u"Actor"), blank=True, null=True, related_name='principal_roles')
     group = models.ForeignKey(ActorGroup, verbose_name=_(u"ActorGroup"), blank=True, null=True)
     role = models.ForeignKey(Role, verbose_name=_(u"Role"))
 
@@ -273,9 +273,12 @@ class PrincipalRoleRelation(models.Model):
             principal = self.actor.name
         else:
             principal = self.group
-        
-        return "%s - %s" % (principal, self.role)
-        
+
+        if self.content_id is not None:
+            return "(%s - %s) -> (%s, %s)" % (principal, self.role, self.content_type, self.content)
+        else:
+            return "(%s - %s)" % (principal, self.role)
+
     def get_principal(self):
         """Returns the principal.
         """

@@ -29,6 +29,6 @@ admin.site.register(ActorGroup)
 
 from permissions.models import Actor
 class ActorAdmin(admin.ModelAdmin):
-    list_display=('name','user', 'is_active', 'suspended', 'created_date', 'modified_date', 'expire_date')
+    list_display=('name','user', 'is_active', 'suspended', 'created_date', 'modified_date', 'expire_date', 'doc_id')
     list_filter  = ['is_active','suspended']
 admin.site.register(Actor, ActorAdmin)
