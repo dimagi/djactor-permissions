@@ -179,7 +179,7 @@ class ObjectPermissionInheritanceBlock(models.Model):
     permission = models.ForeignKey(Permission, verbose_name=_(u"Permission"))
 
     content_type = models.ForeignKey(ContentType, verbose_name=_(u"Content type"))
-    content_id = models.PositiveIntegerField(verbose_name=_(u"Content id"))
+    content_id = models.CharField(max_length=32, verbose_name=_(u"Content id"))
     content = generic.GenericForeignKey(ct_field="content_type", fk_field="content_id")
 
     def __unicode__(self):
