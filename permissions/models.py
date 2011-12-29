@@ -195,7 +195,7 @@ class Role(models.Model):
         The unique name of the role
     """
     id = models.CharField(max_length=32, unique=True, default=make_uuid, primary_key=True, editable=False)
-    name = models.CharField(max_length=100, unique=True)
+    name = models.CharField(max_length=100, unique=True, db_index=True)
     display = models.CharField(max_length=160, help_text="Human readable description of the role for web/print display")
 
     class Meta:
