@@ -141,6 +141,9 @@ class Permission(models.Model):
     def __unicode__(self):
         return u"%s (%s)" % (self.name, self.codename)
 
+    def display_name(self):
+        return ' '.join(self.name.split('.')[1:])
+
 class ObjectPermission(models.Model):
     """Grants permission for a role and an content object (optional).
 
